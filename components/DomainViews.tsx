@@ -188,17 +188,40 @@ const OfferModal = ({ domain, onClose }: { domain: DomainData; onClose: () => vo
 
 export { HistoryModal, OfferModal };
 
-export const DomainDataGrid = (/* ... existing props ... */) => (
-    // ... existing unchanged DomainDataGrid component code ...
-    <motion.div className="data-grid-container glass-card" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.1 }}>
+interface DomainDataGridProps {
+  domains: DomainData[];
+  onRowClick: (domain: DomainData) => void;
+  isLoading: boolean;
+  currentPage: number;
+  hasMore: boolean;
+  onNextPage: () => void;
+  onPrevPage: () => void;
+}
+
+export const DomainDataGrid = ({
+  domains,
+  onRowClick,
+  isLoading,
+  currentPage,
+  hasMore,
+  onNextPage,
+  onPrevPage
+}: DomainDataGridProps) => (
+    <motion.div 
+      className="data-grid-container glass-card" 
+      initial={{ opacity: 0, y: 20 }} 
+      animate={{ opacity: 1, y: 0 }} 
+      transition={{ duration: 0.5, delay: 0.1 }}
+    >
         <div className="data-grid-wrapper">
           <table className="data-grid">
-              <thead><tr><th>Domain</th><th>TLD</th><th>Last Price</th><th>Owner</th><th>Status</th></tr></thead>
+              <thead>
+                  <tr><th>Domain</th><th>TLD</th><th>Last Price</th><th>Owner</th><th>Status</th></tr>
+              </thead>
               <tbody>
                   <AnimatePresence>
-                      {/* @ts-ignore */}
-                      {props.domains.map((domain) => (
-                          <motion.tr key={domain.id} onClick={() => props.onRowClick(domain)} layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3 }}>
+                      {domains.map((domain) => (
+                          <motion.tr key={domain.id} onClick={() => onRowClick(domain)} layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3 }}>
                               <td className="domain-name">{domain.name}</td>
                               <td><span className="tld-chip">{domain.tld}</span></td>
                               <td>${domain.lastTradePrice.toLocaleString()}</td>
@@ -209,18 +232,20 @@ export const DomainDataGrid = (/* ... existing props ... */) => (
                   </AnimatePresence>
               </tbody>
           </table>
-          {/* @ts-ignore */}
-          {props.isLoading && props.domains.length === 0 && <div style={{ padding: '5rem', textAlign: 'center', color: 'var(--color-text-secondary)' }}>Connecting to Doma Protocol Testnet...</div>}
+          {isLoading && domains.length === 0 && (
+            <div style={{ padding: '5rem', textAlign: 'center', color: 'var(--color-text-secondary)' }}>
+                Connecting to Doma Protocol Testnet...
+            </div>
+          )}
         </div>
         <div className="pagination-controls">
-            {/* @ts-ignore */}
-            <div className="pagination-info">Page {props.currentPage}</div>
-            <div className="pagination-buttons">
-                {/* @ts-ignore */}
-                <button className="pagination-button" onClick={props.onPrevPage} disabled={props.currentPage <= 1 || props.isLoading}>Previous</button>
-                {/* @ts-ignore */}
-                <button className="pagination-button" onClick={props.onNextPage} disabled={!props.hasMore || props.isLoading}>{props.isLoading ? 'Loading...' : 'Next'}</button>
-            </div>
+          <div className="pagination-info">Page {currentPage}</div>
+          <div className="pagination-buttons">
+            <button className="pagination-button" onClick={onPrevPage} disabled={currentPage <= 1 || isLoading}>Previous</button>
+            <button className="pagination-button" onClick={onNextPage} disabled={!hasMore || isLoading}>
+              {isLoading ? 'Loading...' : 'Next'}
+            </button>
+          </div>
         </div>
     </motion.div>
 );
