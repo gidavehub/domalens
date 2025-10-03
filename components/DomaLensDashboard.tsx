@@ -199,7 +199,11 @@ export const DomaLensDashboard = () => {
             <div className="dashboard-container">
                 <header className="dashboard-header">
                     <div className="header-left">
-                        <div className="dashboard-logo">DomaLens</div>
+                        <img
+                          src="/logo.png"
+                          alt="DomaLens Logo"
+                          style={{ height: '2.5rem', width: 'auto', marginRight: '1rem' }}
+                        />
                         <button className="header-button" onClick={() => setIsModelsModalOpen(true)}>
                             🔬 Explore Models
                         </button>
