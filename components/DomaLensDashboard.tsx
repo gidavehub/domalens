@@ -9,7 +9,7 @@ import { fetchPaginatedDomains, DomainData } from '../services/domaDataService';
 
 // Import component modules
 import { DashboardWidgetsStyles, GlowingSearchBar, StatCard, LiveEventFeed } from './DashboardWidgets';
-import { DomainViewsStyles, DomainDataGrid, DomainDetailDrawer } from './DomainViews';
+import { DomainViewsStyles, DomainDataGrid, DomainDetailDrawer, HistoryModal, OfferModal } from './DomainViews';
 import { ModelsModalStyles, ModelsModal } from './ModelsModal';
 
 const PAGE_SIZE = 50; // Number of domains to fetch per page
@@ -71,14 +71,7 @@ const DomaLensDashboardStyles = () => (
       gap: 1.5rem;
     }
 
-    .dashboard-logo {
-      font-size: 1.75rem;
-      font-weight: 800;
-      background: linear-gradient(90deg, var(--color-brand-violet), var(--color-brand-cyan));
-      -webkit-background-clip: text;
-      background-clip: text;
-      color: transparent;
-    }
+    /* UPDATED: Removed old text logo style */
 
     .header-button {
       background: rgba(255, 255, 255, 0.8);
@@ -128,6 +121,10 @@ export const DomaLensDashboard = () => {
     const [selectedDomain, setSelectedDomain] = useState<DomainData | null>(null);
     const [isModelsModalOpen, setIsModelsModalOpen] = useState(false);
     
+    // NEW: State for the new interactive modals
+    const [domainForHistory, setDomainForHistory] = useState<DomainData | null>(null);
+    const [domainForOffer, setDomainForOffer] = useState<DomainData | null>(null);
+    
     // State for simulated live stats
     const [transactions24h, setTransactions24h] = useState(1245);
     useEffect(() => {
@@ -157,40 +154,21 @@ export const DomaLensDashboard = () => {
         );
     }, [domains, searchTerm]);
     
-    // Memoized calculation for stats based on current page data
     const marketStats = useMemo(() => {
-        const tldCounts = domains.reduce((acc, d) => {
-            acc[d.tld] = (acc[d.tld] || 0) + 1;
-            return acc;
-        }, {} as Record<string, number>);
-
-        const trendingTld = Object.keys(tldCounts).length > 0
-            ? Object.keys(tldCounts).reduce((a, b) => tldCounts[a] > tldCounts[b] ? a : b)
-            : '...';
-
-        return {
-            totalDomains: "500,000+", // Simulated total
-            trendingTld,
-            liveListings: domains.filter(d => d.status === 'Trading').length,
-        };
+        const tldCounts = domains.reduce((acc, d) => { (acc[d.tld] = (acc[d.tld] || 0) + 1); return acc; }, {} as Record<string, number>);
+        const trendingTld = Object.keys(tldCounts).length > 0 ? Object.keys(tldCounts).reduce((a, b) => tldCounts[a] > tldCounts[b] ? a : b) : '...';
+        return { totalDomains: "500,000+", trendingTld, liveListings: domains.filter(d => d.status === 'Trading').length };
     }, [domains]);
 
-    // Handlers for pagination
-    const handleNextPage = useCallback(() => {
-        if (hasMore && !isLoading) {
-            setCurrentPage(prev => prev + 1);
-        }
-    }, [hasMore, isLoading]);
-
-    const handlePrevPage = useCallback(() => {
-        if (currentPage > 1 && !isLoading) {
-            setCurrentPage(prev => prev - 1);
-        }
-    }, [currentPage, isLoading]);
+    const handleNextPage = useCallback(() => { if (hasMore && !isLoading) setCurrentPage(prev => prev + 1); }, [hasMore, isLoading]);
+    const handlePrevPage = useCallback(() => { if (currentPage > 1 && !isLoading) setCurrentPage(prev => prev - 1); }, [currentPage, isLoading]);
+    
+    // NEW: Handlers for opening the feature modals
+    const handleViewHistory = (domain: DomainData) => { setDomainForHistory(domain); };
+    const handleMakeOffer = (domain: DomainData) => { setDomainForOffer(domain); };
     
     return (
         <>
-            {/* Aggregate all style components */}
             <DomaLensDashboardStyles />
             <DashboardWidgetsStyles />
             <DomainViewsStyles />
@@ -199,10 +177,11 @@ export const DomaLensDashboard = () => {
             <div className="dashboard-container">
                 <header className="dashboard-header">
                     <div className="header-left">
+                        {/* UPDATED: Logo implementation */}
                         <img
                           src="/logo.png"
                           alt="DomaLens Logo"
-                          style={{ height: '2.5rem', width: 'auto', marginRight: '1rem' }}
+                          style={{ height: '6.25rem', width: 'auto' }} // 2.5rem * 2.5 = 6.25rem
                         />
                         <button className="header-button" onClick={() => setIsModelsModalOpen(true)}>
                             🔬 Explore Models
@@ -219,24 +198,17 @@ export const DomaLensDashboard = () => {
                             <StatCard title="Trending TLD" isLoading={isLoading} value={marketStats.trendingTld} />
                             <StatCard title="Live Listings" isLoading={isLoading} value={marketStats.liveListings.toLocaleString()} />
                         </div>
-                        
-                        <DomainDataGrid 
-                            domains={filteredDomains}
-                            onRowClick={setSelectedDomain}
-                            isLoading={isLoading}
-                            currentPage={currentPage}
-                            hasMore={hasMore}
-                            onNextPage={handleNextPage}
-                            onPrevPage={handlePrevPage}
-                        />
+                        <DomainDataGrid domains={filteredDomains} onRowClick={setSelectedDomain} isLoading={isLoading} currentPage={currentPage} hasMore={hasMore} onNextPage={handleNextPage} onPrevPage={handlePrevPage} />
                     </div>
-                    <div className="main-content-column">
-                        <LiveEventFeed />
-                    </div>
+                    <div className="main-content-column"><LiveEventFeed /></div>
                 </main>
                 
-                <DomainDetailDrawer domain={selectedDomain} onClose={() => setSelectedDomain(null)} />
+                <DomainDetailDrawer domain={selectedDomain} onClose={() => setSelectedDomain(null)} onViewHistory={handleViewHistory} onMakeOffer={handleMakeOffer} />
                 <ModelsModal isOpen={isModelsModalOpen} onClose={() => setIsModelsModalOpen(false)} />
+                
+                {/* NEW: Render the modals conditionally */}
+                {domainForHistory && <HistoryModal domain={domainForHistory} onClose={() => setDomainForHistory(null)} />}
+                {domainForOffer && <OfferModal domain={domainForOffer} onClose={() => setDomainForOffer(null)} />}
             </div>
         </>
     );
